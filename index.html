@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Neon Slot Casino</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    background:#050510;
+    color:white;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+}
+
+.container{
+    width:95%;
+    max-width:420px;
+    background:#111827;
+    border:2px solid #00ffe5;
+    border-radius:25px;
+    padding:20px;
+    box-shadow:0 0 25px #00ffe5;
+}
+
+.title{
+    text-align:center;
+    font-size:30px;
+    color:#00ffe5;
+    margin-bottom:15px;
+    text-shadow:0 0 10px #00ffe5;
+}
+
+.info{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:15px;
+    font-size:18px;
+}
+
+.slot-wrapper{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin:25px 0;
+}
+
+.slot{
+    width:100px;
+    height:120px;
+    background:#000;
+    border:2px solid #00ffe5;
+    border-radius:15px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:60px;
+    overflow:hidden;
+    position:relative;
+    box-shadow:0 0 15px #00ffe5;
+}
+
+.reel{
+    position:absolute;
+    transition:transform .1s linear;
+}
+
+.controls{
+    margin-top:10px;
+}
+
+.bet-box{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:15px;
+}
+
+input{
+    width:100px;
+    padding:10px;
+    border:none;
+    border-radius:10px;
+    font-size:18px;
+    text-align:center;
+    background:#1f2937;
+    color:white;
+}
+
+button{
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:15px;
+    background:#00ffe5;
+    color:black;
+    font-size:22px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.2s;
+    box-shadow:0 0 15px #00ffe5;
+}
+
+button:hover{
+    transform:scale(1.03);
+}
+
+.message{
+    text-align:center;
+    margin-top:15px;
+    min-height:30px;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.win{
+    color:gold;
+    text-shadow:0 0 10px gold;
+}
+
+.lose{
+    color:#ff5c5c;
+}
+
+@media(max-width:480px){
+    .slot{
+        width:85px;
+        height:100px;
+        font-size:50px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="title">🎰 NEON SLOT 🎰</div>
+
+    <div class="info">
+        <div>💰 Saldo: <span id="balance">1000</span></div>
+        <div>🏆 Win: <span id="wins">0</span></div>
+    </div>
+
+    <div class="slot-wrapper">
+        <div class="slot"><div class="reel" id="r1">🍒</div></div>
+        <div class="slot"><div class="reel" id="r2">🍋</div></div>
+        <div class="slot"><div class="reel" id="r3">⭐</div></div>
+    </div>
+
+    <div class="controls">
+
+        <div class="bet-box">
+            <label>Taruhan:</label>
+            <input type="number" id="bet" value="50" min="10">
+        </div>
+
+        <button onclick="spin()">SPIN</button>
+
+        <div class="message" id="message"></div>
+
+    </div>
+
+</div>
+
+<!-- AUDIO -->
+<audio id="spinSound">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="winSound">
+    <source src="https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+
+const symbols = ["🍒","🍋","🍉","⭐","💎","7️⃣"];
+
+let balance = 1000;
+let wins = 0;
+let spinning = false;
+
+const balanceEl = document.getElementById("balance");
+const winsEl = document.getElementById("wins");
+const messageEl = document.getElementById("message");
+
+function randomSymbol(){
+    return symbols[Math.floor(Math.random() * symbols.length)];
+}
+
+function animateReel(element, finalSymbol, duration){
+
+    return new Promise(resolve=>{
+
+        let interval = setInterval(()=>{
+            element.innerText = randomSymbol();
+        },100);
+
+        setTimeout(()=>{
+            clearInterval(interval);
+            element.innerText = finalSymbol;
+            resolve();
+        },duration);
+
+    });
+
+}
+
+async function spin(){
+
+    if(spinning) return;
+
+    const bet = parseInt(document.getElementById("bet").value);
+
+    if(bet > balance){
+        alert("Saldo tidak cukup!");
+        return;
+    }
+
+    spinning = true;
+
+    balance -= bet;
+    updateUI();
+
+    document.getElementById("spinSound").play();
+
+    const s1 = randomSymbol();
+    const s2 = randomSymbol();
+    const s3 = randomSymbol();
+
+    await animateReel(document.getElementById("r1"), s1, 1200);
+    await animateReel(document.getElementById("r2"), s2, 1800);
+    await animateReel(document.getElementById("r3"), s3, 2400);
+
+    checkWin(s1,s2,s3,bet);
+
+    spinning = false;
+}
+
+function checkWin(a,b,c,bet){
+
+    if(a===b && b===c){
+
+        const reward = bet * 5;
+
+        balance += reward;
+        wins++;
+
+        messageEl.innerHTML = `🎉 JACKPOT +${reward}`;
+        messageEl.className = "message win";
+
+        document.getElementById("winSound").play();
+
+    }else if(a===b || b===c || a===c){
+
+        const reward = bet * 2;
+
+        balance += reward;
+
+        messageEl.innerHTML = `✨ Menang +${reward}`;
+        messageEl.className = "message win";
+
+    }else{
+
+        messageEl.innerHTML = "😢 Kalah";
+        messageEl.className = "message lose";
+    }
+
+    if(balance <= 0){
+        alert("Game Over!");
+        balance = 1000;
+    }
+
+    updateUI();
+}
+
+function updateUI(){
+    balanceEl.innerText = balance;
+    winsEl.innerText = wins;
+}
+
+</script>
+
+</body>
+</html>
